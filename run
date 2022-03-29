@@ -1,0 +1,56 @@
+#!/bin/bash
+# HW6 reference solution.
+
+set -eou pipefail
+
+readonly LM=lm.fst
+readonly TRAIN=train.txt
+readonly TEST=test.txt
+readonly RANK=rank.tsv
+
+download() {
+    curl --silent \
+        https://data.statmt.org/news-crawl/en/news.2008.en.shuffled.deduped.gz \
+        | gunzip -c \
+        > "${TRAIN}"
+    curl --silent \
+        https://data.statmt.org/news-crawl/en/news.2009.en.shuffled.deduped.gz \
+        | gunzip -c \
+        > "${TEST}"
+}
+
+train() {
+    local -r FAR="${TRAIN/%.txt/.far}"
+
+    farcompilestrings --fst_type=compact --token_type=byte "${TRAIN}" "${FAR}"
+
+    echo "FAR info:"
+    farinfo "${FAR}"
+    
+    echo
+
+    ngramcount --order=6 --require_symbols=false "${FAR}" - | \
+      ngrammake --method=witten_bell - | \
+      ngramshrink --method=relative_entropy \
+          --target_number_of_ngrams=1000000 \
+          - \
+	  "${LM}"
+
+    echo "Model info:"
+    ngraminfo "${LM}"
+
+    # Cleans up temporary data.
+    rm -f "${FAR}"
+}
+
+score() {
+    ./score.py --corpus="${TEST}" --lm="${LM}" | sort -n > "${RANK}"
+}
+
+main() {
+    download
+    train
+    score
+}
+
+main
