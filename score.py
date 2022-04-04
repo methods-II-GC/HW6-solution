@@ -71,10 +71,10 @@ def main(args: argparse.Namespace) -> None:
             line = pynini.escape(line.rstrip())
             string = pynini.accep(line, token_type=token_type)
             try:
-              bits_per_char = _bits_per_char(string, lm)
-              tsv_writer.writerow([bits_per_char, line])
+                bits_per_char = _bits_per_char(string, lm)
+                tsv_writer.writerow([bits_per_char, line])
             except Error:
-              pass
+                pass
 
 
 if __name__ == "__main__":
